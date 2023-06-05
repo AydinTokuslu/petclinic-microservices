@@ -1,5 +1,5 @@
 provider "aws" {
-  region  = "us-east-1"
+  region = "us-east-1"
 }
 
 variable "sec-gr-mutual" {
@@ -19,55 +19,55 @@ data "aws_vpc" "name" {
 }
 
 resource "aws_security_group" "petclinic-mutual-sg" {
-  name = var.sec-gr-mutual
+  name   = var.sec-gr-mutual
   vpc_id = data.aws_vpc.name.id
 
   ingress {
-    protocol = "tcp"
+    protocol  = "tcp"
     from_port = 10250
-    to_port = 10250
-    self = true
+    to_port   = 10250
+    self      = true
   }
 
-    ingress {
-    protocol = "udp"
+  ingress {
+    protocol  = "udp"
     from_port = 8472
-    to_port = 8472
-    self = true
+    to_port   = 8472
+    self      = true
   }
 
-    ingress {
-    protocol = "tcp"
+  ingress {
+    protocol  = "tcp"
     from_port = 2379
-    to_port = 2380
-    self = true
+    to_port   = 2380
+    self      = true
   }
 
 }
 
 resource "aws_security_group" "petclinic-kube-worker-sg" {
-  name = var.sec-gr-k8s-worker
+  name   = var.sec-gr-k8s-worker
   vpc_id = data.aws_vpc.name.id
 
 
   ingress {
-    protocol = "tcp"
-    from_port = 30000
-    to_port = 32767
+    protocol    = "tcp"
+    from_port   = 30000
+    to_port     = 32767
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    protocol = "tcp"
-    from_port = 22
-    to_port = 22
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress{
-    protocol = "-1"
-    from_port = 0
-    to_port = 0
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
@@ -76,51 +76,51 @@ resource "aws_security_group" "petclinic-kube-worker-sg" {
 }
 
 resource "aws_security_group" "petclinic-kube-master-sg" {
-  name = var.sec-gr-k8s-master
+  name   = var.sec-gr-k8s-master
   vpc_id = data.aws_vpc.name.id
 
   ingress {
-    protocol = "tcp"
-    from_port = 22
-    to_port = 22
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    protocol = "tcp"
-    from_port = 6443
-    to_port = 6443
+    protocol    = "tcp"
+    from_port   = 6443
+    to_port     = 6443
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    protocol = "tcp"
+    protocol  = "tcp"
     from_port = 10257
-    to_port = 10257
-    self = true
+    to_port   = 10257
+    self      = true
   }
 
   ingress {
-    protocol = "tcp"
+    protocol  = "tcp"
     from_port = 10259
-    to_port = 10259
-    self = true
+    to_port   = 10259
+    self      = true
   }
 
   ingress {
-    protocol = "tcp"
-    from_port = 30000
-    to_port = 32767
+    protocol    = "tcp"
+    from_port   = 30000
+    to_port     = 32767
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    protocol = "-1"
-    from_port = 0
-    to_port = 0
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   tags = {
     Name = "kube-master-secgroup"
   }
@@ -153,67 +153,67 @@ resource "aws_iam_instance_profile" "petclinic-master-server-profile" {
 }
 
 resource "aws_instance" "kube-master" {
-    ami = "ami-053b0d53c279acc90"
-    instance_type = "t3a.medium"
-    iam_instance_profile = aws_iam_instance_profile.petclinic-master-server-profile.name
-    vpc_security_group_ids = [aws_security_group.petclinic-kube-master-sg.id, aws_security_group.petclinic-mutual-sg.id]
-    key_name = "clarus"
-    subnet_id = "subnet-c41ba589"  # select own subnet_id of us-east-1a
-    availability_zone = "us-east-1a"
-    tags = {
-        Name = "kube-master"
-        Project = "tera-kube-ans"
-        Role = "master"
-        Id = "1"
-        environment = "dev"
-    }
+  ami                    = "ami-053b0d53c279acc90"
+  instance_type          = "t3a.medium"
+  iam_instance_profile   = aws_iam_instance_profile.petclinic-master-server-profile.name
+  vpc_security_group_ids = [aws_security_group.petclinic-kube-master-sg.id, aws_security_group.petclinic-mutual-sg.id]
+  key_name               = "clarus"
+  subnet_id              = "subnet-0b8665bd69d8552fe" # select own subnet_id of us-east-1a
+  availability_zone      = "us-east-1a"
+  tags = {
+    Name        = "kube-master"
+    Project     = "tera-kube-ans"
+    Role        = "master"
+    Id          = "1"
+    environment = "dev"
+  }
 }
 
 resource "aws_instance" "worker-1" {
-    ami = "ami-053b0d53c279acc90"
-    instance_type = "t3a.medium"
-    vpc_security_group_ids = [aws_security_group.petclinic-kube-worker-sg.id, aws_security_group.petclinic-mutual-sg.id]
-    key_name = "clarus"
-    subnet_id = "subnet-c41ba589"  # select own subnet_id of us-east-1a
-    availability_zone = "us-east-1a"
-    tags = {
-        Name = "worker-1"
-        Project = "tera-kube-ans"
-        Role = "worker"
-        Id = "1"
-        environment = "dev"
-    }
+  ami                    = "ami-053b0d53c279acc90"
+  instance_type          = "t3a.medium"
+  vpc_security_group_ids = [aws_security_group.petclinic-kube-worker-sg.id, aws_security_group.petclinic-mutual-sg.id]
+  key_name               = "clarus"
+  subnet_id              = "subnet-0b8665bd69d8552fe" # select own subnet_id of us-east-1a
+  availability_zone      = "us-east-1a"
+  tags = {
+    Name        = "worker-1"
+    Project     = "tera-kube-ans"
+    Role        = "worker"
+    Id          = "1"
+    environment = "dev"
+  }
 }
 
 resource "aws_instance" "worker-2" {
-    ami = "ami-053b0d53c279acc90"
-    instance_type = "t3a.medium"
-    vpc_security_group_ids = [aws_security_group.petclinic-kube-worker-sg.id, aws_security_group.petclinic-mutual-sg.id]
-    key_name = "clarus"
-    subnet_id = "subnet-c41ba589"  # select own subnet_id of us-east-1a
-    availability_zone = "us-east-1a"
-    tags = {
-        Name = "worker-2"
-        Project = "tera-kube-ans"
-        Role = "worker"
-        Id = "2"
-        environment = "dev"
-    }
+  ami                    = "ami-053b0d53c279acc90"
+  instance_type          = "t3a.medium"
+  vpc_security_group_ids = [aws_security_group.petclinic-kube-worker-sg.id, aws_security_group.petclinic-mutual-sg.id]
+  key_name               = "clarus"
+  subnet_id              = "subnet-0b8665bd69d8552fe" # select own subnet_id of us-east-1a
+  availability_zone      = "us-east-1a"
+  tags = {
+    Name        = "worker-2"
+    Project     = "tera-kube-ans"
+    Role        = "worker"
+    Id          = "2"
+    environment = "dev"
+  }
 }
 
-output kube-master-ip {
+output "kube-master-ip" {
   value       = aws_instance.kube-master.public_ip
   sensitive   = false
   description = "public ip of the kube-master"
 }
 
-output worker-1-ip {
+output "worker-1-ip" {
   value       = aws_instance.worker-1.public_ip
   sensitive   = false
   description = "public ip of the worker-1"
 }
 
-output worker-2-ip {
+output "worker-2-ip" {
   value       = aws_instance.worker-2.public_ip
   sensitive   = false
   description = "public ip of the worker-2"
